@@ -8,7 +8,7 @@ try:
     import pypandoc
     long_description = pypandoc.convert('README.md', 'rst',
                                         format='markdown_github',
-                                        extra_args=("--no-wrap",))
+                                        extra_args=("--wrap=none",))
 except:
     long_description = ''
 
