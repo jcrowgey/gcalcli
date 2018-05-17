@@ -13,7 +13,7 @@ except:
     long_description = ''
 
 setup(name='gcalcli',
-      version='3.4.0',
+      version='4.0.0',
       maintainer='Eric Davis, Brian Hartvigsen',
       maintainer_email='edavis@insanum.com, brian.andrew@brianandjenny.com',
       description='Google Calendar Command Line Interface',
@@ -26,7 +26,7 @@ setup(name='gcalcli',
           'python-gflags',
           'httplib2',
           'google-api-python-client',
-          'oauth2client<=1.4.12'
+          'oauth2client'
       ],
       extras_require={
           'vobject':  ["vobject"],
