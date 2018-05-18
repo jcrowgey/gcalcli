@@ -12,6 +12,7 @@ import textwrap
 import time
 from datetime import date, datetime, timedelta
 from unicodedata import east_asian_width
+from argparse import Namespace
 
 
 # Required 3rd party libraries
@@ -140,14 +141,14 @@ usage:
 
   quick <text>             quick add an event to a calendar
                            - a single --calendar must specified
-                           - the "--details url" option will show the event link
+                           - "--details url" will show the event link
                            - example text:
                               'Dinner with Eric 7pm tomorrow'
                               '5pm 10/31 Trick or Treat'
 
   add                      add a detailed event to a calendar
                            - a single --calendar must specified
-                           - the "--details url" option will show the event link
+                           - "--details url" will show the event link
                            - example:
                               gcalcli --calendar 'Eric Davis'
                                       --title 'Analysis of Algorithms Final'
@@ -219,6 +220,15 @@ except:
 locale.setlocale(locale.LC_ALL, "")
 
 
+def setup_run_flow_flags():
+    flags = Namespace()
+    flags.logging_level = 'INFO'
+    flags.noauth_local_webserver = True
+    flags.auth_host_port = [8080, 8090] 
+    flags.auth_host_name = 'localhost'
+    return flags
+
+
 def version():
     print(__program__,  __version__,  ' (', __author__,  ')')
 
@@ -230,12 +240,11 @@ def usage(expanded=False):
 
 
 class CLR:
-
     use_color = True
     conky = False
 
     def __str__(self):
-        return self.color if self.use_color else ""
+        return self.color if self.use_color else ''
 
 
 class CLR_NRM(CLR):
@@ -509,7 +518,7 @@ class gcalcli:
     agendaLength = 5
     maxRetries = 5
     authHttp = None
-    calService = None
+    cal_service = None
     urlService = None
     command = 'notify-send -u critical -a gcalcli %s'
     dateParser = DateTimeParser()
@@ -525,15 +534,15 @@ class gcalcli:
                  cal_names=[],
                  cal_name_colors=[],
                  military=False,
-                 detailCalendar=False,
-                 detailLocation=False,
-                 detailAttendees=False,
-                 detailAttachments=False,
-                 detailLength=False,
-                 detailReminders=False,
-                 detailDescr=False,
-                 detailDescrWidth=80,
-                 detailUrl=None,
+                 detail_calendar=False,
+                 detail_location=False,
+                 detail_attendees=False,
+                 detail_attachments=False,
+                 detail_length=False,
+                 detail_reminder=False,
+                 detail_descr=False,
+                 detail_descr_width=80,
+                 detail_url=None,
                  detailEmail=False,
                  ignoreStarted=False,
                  ignoreDeclined=False,
@@ -547,9 +556,9 @@ class gcalcli:
                  nowMarkerColor=CLR_BRRED(),
                  border_color=CLR_WHT(),
                  tsv=False,
-                 refreshCache=False,
-                 useCache=True,
-                 configFolder=None,
+                 refresh_cache=False,
+                 use_cache=True,
+                 config_folder=None,
                  client_id=__API_CLIENT_ID__,
                  client_secret=__API_CLIENT_SECRET__,
                  defaultReminders=False,
@@ -561,20 +570,20 @@ class gcalcli:
         self.calWidth = calWidth
         self.calMonday = calMonday
         self.tsv = tsv
-        self.refreshCache = refreshCache
-        self.useCache = useCache
+        self.refresh_cache = refresh_cache
+        self.use_cache = use_cache
         self.defaultReminders = defaultReminders
         self.all_day = all_day
 
-        self.detailCalendar = detailCalendar
-        self.detailLocation = detailLocation
-        self.detailLength = detailLength
-        self.detailReminders = detailReminders
-        self.detailDescr = detailDescr
-        self.detailDescrWidth = detailDescrWidth
-        self.detailUrl = detailUrl
-        self.detailAttendees = detailAttendees
-        self.detailAttachments = detailAttachments
+        self.detail_calendar = detail_calendar
+        self.detail_location = detail_location
+        self.detail_length = detail_length
+        self.detail_reminder = detail_reminder
+        self.detail_descr = detail_descr
+        self.detail_descr_width = detail_descr_width
+        self.detail_url = detail_url
+        self.detail_attendees = detail_attendees
+        self.detail_attachments = detail_attachments
         self.detailEmail = detailEmail
 
         self.calOwnerColor = calOwnerColor
@@ -585,12 +594,12 @@ class gcalcli:
         self.nowMarkerColor = nowMarkerColor
         self.border_color = border_color
 
-        self.configFolder = configFolder
+        self.config_folder = config_folder
 
         self.client_id = client_id
         self.client_secret = client_secret
 
-        self._GetCached()
+        self._get_cached()
 
         if len(cal_names):
             # Changing the order of this and the `cal in self.all_cals` loop
@@ -601,7 +610,7 @@ class gcalcli:
                 for cal in self.all_cals:
                     # For exact match, we should match only 1 entry and accept
                     # the first entry.  Should honor access role order since
-                    # it happens after _GetCached()
+                    # it happens after _get_cached()
                     if cal_names[i] == cal['summary']:
                         # This makes sure that if we have any regex matches
                         # that we toss them out in favor of the specific match
@@ -628,7 +637,7 @@ class gcalcli:
         else:
             return dt.astimezone(tzlocal())
 
-    def _RetryWithBackoff(self, method):
+    def _retry_with_backoff(self, method):
         for n in range(0, self.maxRetries):
             try:
                 return method.execute()
@@ -645,14 +654,16 @@ class gcalcli:
 
     def _GoogleAuth(self):
         if not self.authHttp:
-            if self.configFolder:
+            if self.config_folder:
                 storage = Storage(os.path.expanduser("%s/oauth" %
-                                                     self.configFolder))
+                                                     self.config_folder))
             else:
                 storage = Storage(os.path.expanduser('~/.gcalcli_oauth'))
+
             credentials = storage.get()
 
             if credentials is None or credentials.invalid:
+                flags = setup_run_flow_flags()
                 credentials = run_flow(
                     OAuth2WebServerFlow(
                         client_id=self.client_id,
@@ -660,7 +671,7 @@ class gcalcli:
                         scope=['https://www.googleapis.com/auth/calendar',
                                'https://www.googleapis.com/auth/urlshortener'],
                         user_agent=__program__ + '/' + __version__),
-                    storage)
+                    storage, flags)
 
             self.authHttp = credentials.authorize(httplib2.Http())
 
@@ -685,15 +696,15 @@ class gcalcli:
 
         return self.urlService
 
-    def _GetCached(self):
-        if self.configFolder:
-            cacheFile = os.path.expanduser("%s/cache" % self.configFolder)
+    def _get_cached(self):
+        if self.config_folder:
+            cache_file = os.path.expanduser("%s/cache" % self.config_folder)
         else:
-            cacheFile = os.path.expanduser('~/.gcalcli_cache')
+            cache_file = os.path.expanduser('~/.gcalcli_cache')
 
-        if self.refreshCache:
+        if self.refresh_cache:
             try:
-                os.remove(cacheFile)
+                os.remove(cache_file)
             except OSError:
                 pass
                 # fall through
@@ -701,11 +712,11 @@ class gcalcli:
         self.cache = {}
         self.all_cals = []
 
-        if self.useCache:
+        if self.use_cache:
             # note that we need to use pickle for cache data since we stuff
             # various non-JSON data in the runtime storage structures
             try:
-                with open(cacheFile, 'rb') as _cache_:
+                with open(cache_file, 'rb') as _cache_:
                     self.cache = pickle.load(_cache_)
                     self.all_cals = self.cache['all_cals']
                 # XXX assuming data is valid, need some verification check here
@@ -714,16 +725,17 @@ class gcalcli:
                 pass
                 # fall through
 
-        calList = self._RetryWithBackoff(
-            self._cal_service().calendar_list().list())
+        cal_list = self._retry_with_backoff(
+            self._cal_service().calendarList().list())
 
         while True:
-            for cal in calList['items']:
+            for cal in cal_list['items']:
                 self.all_cals.append(cal)
-            pageToken = calList.get('nextPageToken')
+            pageToken = cal_list.get('nextPageToken')
             if pageToken:
-                calList = self._RetryWithBackoff(
-                    self._cal_service().calendar_list().list(pageToken=pageToken))
+                cal_list = self._retry_with_backoff(
+                    self._cal_service().calendar_list().list(
+                        pageToken=pageToken))
             else:
                 break
 
@@ -735,17 +747,17 @@ class gcalcli:
 
         self.all_cals.sort(key=lambda x: order[x['accessRole']])
 
-        if self.useCache:
+        if self.use_cache:
             self.cache['all_cals'] = self.all_cals
-            with open(cacheFile, 'wb') as _cache_:
+            with open(cache_file, 'wb') as _cache_:
                 pickle.dump(self.cache, _cache_)
 
     def _ShortenURL(self, url):
-        if self.detailUrl != "short":
+        if self.detail_url != "short":
             return url
         # Note that when authenticated to a google account different shortUrls
         # can be returned for the same longUrl. See: http://goo.gl/Ya0A9
-        shortUrl = self._RetryWithBackoff(
+        shortUrl = self._retry_with_backoff(
             self._UrlService().url().insert(body={'longUrl': url}))
         return shortUrl['id']
 
@@ -1138,7 +1150,7 @@ class gcalcli:
                                          event['e'].strftime('%Y-%m-%d'),
                                          event['e'].strftime('%H:%M'))
 
-            if self.detailUrl:
+            if self.detail_url:
                 output += "\t%s" % (self._ShortenURL(event['htmlLink'])
                                     if 'htmlLink' in event else '')
                 output += "\t%s" % (self._ShortenURL(event['hangoutLink'])
@@ -1146,15 +1158,15 @@ class gcalcli:
 
             output += "\t%s" % self._ValidTitle(event).strip()
 
-            if self.detailLocation:
+            if self.detail_location:
                 output += "\t%s" % (event['location'].strip()
                                     if 'location' in event else '')
 
-            if self.detailDescr:
+            if self.detail_descr:
                 output += "\t%s" % (event['description'].strip()
                                     if 'description' in event else '')
 
-            if self.detailCalendar:
+            if self.detail_calendar:
                 output += "\t%s" % event['gcalcli_cal']['summary'].strip()
 
             if self.detailEmail:
@@ -1171,22 +1183,22 @@ class gcalcli:
             if box:
                 wrapper.initial_indent = (indent + '  ')
                 wrapper.subsequent_indent = (indent + '  ')
-                wrapper.width = (self.detailDescrWidth - 2)
+                wrapper.width = (self.detail_descr_width - 2)
             else:
                 wrapper.initial_indent = indent
                 wrapper.subsequent_indent = indent
-                wrapper.width = self.detailDescrWidth
+                wrapper.width = self.detail_descr_width
             new_descr = ""
             for line in descr.split("\n"):
                 if box:
                     tmpLine = wrapper.fill(line)
                     for singleLine in tmpLine.split("\n"):
-                        singleLine = singleLine.ljust(self.detailDescrWidth,
+                        singleLine = singleLine.ljust(self.detail_descr_width,
                                                       ' ')
                         new_descr += singleLine[:len(indent)] + \
                             str(ART_VRT()) + \
                             singleLine[(len(indent) + 1):
-                                       (self.detailDescrWidth - 1)] + \
+                                       (self.detail_descr_width - 1)] + \
                             str(ART_VRT()) + '\n'
                 else:
                     new_descr += wrapper.fill(line) + "\n"
@@ -1222,24 +1234,24 @@ class gcalcli:
             print_msg(event_color,
                       fmt % (tmp_time_str, self._ValidTitle(event).strip()))
 
-        if self.detailCalendar:
+        if self.detail_calendar:
             xstr = "%s  Calendar: %s\n" % (
                 detailsIndent,
                 event['gcalcli_cal']['summary']
             )
             print_msg(CLR_NRM(), xstr)
 
-        if self.detailUrl and 'htmlLink' in event:
+        if self.detail_url and 'htmlLink' in event:
             hLink = self._ShortenURL(event['htmlLink'])
             xstr = "%s  Link: %s\n" % (detailsIndent, hLink)
             print_msg(CLR_NRM(), xstr)
 
-        if self.detailUrl and 'hangoutLink' in event:
+        if self.detail_url and 'hangoutLink' in event:
             hLink = self._ShortenURL(event['hangoutLink'])
             xstr = "%s  Hangout Link: %s\n" % (detailsIndent, hLink)
             print_msg(CLR_NRM(), xstr)
 
-        if self.detailLocation and \
+        if self.detail_location and \
            'location' in event and \
            event['location'].strip():
             xstr = "%s  Location: %s\n" % (
@@ -1248,7 +1260,7 @@ class gcalcli:
             )
             print_msg(CLR_NRM(), xstr)
 
-        if self.detailAttendees and 'attendees' in event:
+        if self.detail_attendees and 'attendees' in event:
             xstr = "%s  Attendees:\n" % (detailsIndent)
             print_msg(CLR_NRM(), xstr)
 
@@ -1270,7 +1282,7 @@ class gcalcli:
                     )
                     print_msg(CLR_NRM(), xstr)
 
-        if self.detailAttachments and 'attachments' in event:
+        if self.detail_attachments and 'attachments' in event:
             xstr = "%s  Attachments:\n" % (detailsIndent)
             print_msg(CLR_NRM(), xstr)
 
@@ -1283,12 +1295,12 @@ class gcalcli:
                 )
                 print_msg(CLR_NRM(), xstr)
 
-        if self.detailLength:
+        if self.detail_length:
             diffDateTime = (event['e'] - event['s'])
             xstr = "%s  Length: %s\n" % (detailsIndent, diffDateTime)
             print_msg(CLR_NRM(), xstr)
 
-        if self.detailReminders and 'reminders' in event:
+        if self.detail_reminder and 'reminders' in event:
             if event['reminders']['useDefault'] is True:
                 xstr = "%s  Reminder: (default)\n" % (detailsIndent)
                 print_msg(CLR_NRM(), xstr)
@@ -1307,7 +1319,7 @@ class gcalcli:
             )
             print_msg(CLR_NRM(), xstr)
 
-        if self.detailDescr and \
+        if self.detail_descr and \
            'description' in event and \
            event['description'].strip():
             descrIndent = detailsIndent + '  '
@@ -1316,13 +1328,13 @@ class gcalcli:
                 topMarker = (descrIndent +
                              str(ART_ULC()) +
                              (str(ART_HRZ()) *
-                              ((self.detailDescrWidth - len(descrIndent)) -
+                              ((self.detail_descr_width - len(descrIndent)) -
                                2)) +
                              str(ART_URC()))
                 botMarker = (descrIndent +
                              str(ART_LLC()) +
                              (str(ART_HRZ()) *
-                              ((self.detailDescrWidth - len(descrIndent)) -
+                              ((self.detail_descr_width - len(descrIndent)) -
                                2)) +
                              str(ART_LRC()))
                 xstr = "%s  Description:\n%s\n%s\n%s\n" % (
@@ -1334,7 +1346,7 @@ class gcalcli:
                 )
             else:
                 marker = descrIndent + '-' * \
-                    (self.detailDescrWidth - len(descrIndent))
+                    (self.detail_descr_width - len(descrIndent))
                 xstr = "%s  Description:\n%s\n%s\n%s\n" % (
                     detailsIndent,
                     marker,
@@ -1347,7 +1359,7 @@ class gcalcli:
     def _DeleteEvent(self, event):
 
         if self.iamaExpert:
-            self._RetryWithBackoff(
+            self._retry_with_backoff(
                 self._cal_service().events().
                 delete(calendarId=event['gcalcli_cal']['id'],
                        eventId=event['id']))
@@ -1361,7 +1373,7 @@ class gcalcli:
             return
 
         elif val.lower() == 'y':
-            self._RetryWithBackoff(
+            self._retry_with_backoff(
                 self._cal_service().events().
                 delete(calendarId=event['gcalcli_cal']['id'],
                        eventId=event['id']))
@@ -1415,7 +1427,7 @@ class gcalcli:
                     if k in event:
                         mod_event[k] = event[k]
 
-                self._RetryWithBackoff(
+                self._retry_with_backoff(
                     self._cal_service().events().
                     patch(calendarId=event['gcalcli_cal']['id'],
                           eventId=event['id'],
@@ -1446,7 +1458,8 @@ class gcalcli:
                     td = (event['e'] - event['s'])
                     length = ((td.days * 1440) + (td.seconds / 60))
                     new_start, new_end = GetTimeFromStr(val.strip(), length)
-                    event = self._set_event_start_end(new_start, new_end, event)
+                    event = self._set_event_start_end(
+                                new_start, new_end, event)
 
             elif val.lower() == 'g':
                 print_msg(CLR_MAG(), "Length (mins): ")
@@ -1454,7 +1467,8 @@ class gcalcli:
                 if val.strip():
                     new_start, new_end = \
                         GetTimeFromStr(event['start']['dateTime'], val.strip())
-                    event = self._set_event_start_end(new_start, new_end, event)
+                    event = self._set_event_start_end(
+                                new_start, new_end, event)
 
             elif val.lower() == 'r':
                 rem = []
@@ -1571,7 +1585,7 @@ class gcalcli:
 
             pageToken = events.get('nextPageToken')
             if pageToken:
-                events = self._RetryWithBackoff(
+                events = self._retry_with_backoff(
                     self._cal_service().events().
                     list(calendarId=cal['id'], pageToken=pageToken))
             else:
@@ -1589,7 +1603,7 @@ class gcalcli:
                      timeMax=end.isoformat() if end else None,
                      q=searchText if searchText else None,
                      singleEvents=True)
-            events = self._RetryWithBackoff(work)
+            events = self._retry_with_backoff(work)
             event_list.extend(self._GetAllEvents(cal, events, end))
 
         event_list.sort(key=lambda x: x['s'])
@@ -1755,7 +1769,7 @@ your cache file might be stale and you might need to remove it and try again.
 """)
             return
 
-        newEvent = self._RetryWithBackoff(
+        newEvent = self._retry_with_backoff(
             self._cal_service().events().quickAdd(
                 calendarId=self.cals[0]['id'], text=eventText))
 
@@ -1768,13 +1782,13 @@ your cache file might be stale and you might need to remove it and try again.
                 rem['reminders']['overrides'].append({'minutes': n,
                                                       'method': m})
 
-            newEvent = self._RetryWithBackoff(
+            newEvent = self._retry_with_backoff(
                 self._cal_service().events().
                 patch(calendarId=self.cals[0]['id'],
                       eventId=newEvent['id'],
                       body=rem))
 
-        if self.detailUrl:
+        if self.detail_url:
             hLink = self._ShortenURL(newEvent['htmlLink'])
             print_msg(CLR_GRN(), 'New event added: %s\n' % hLink)
 
@@ -1812,11 +1826,11 @@ your cache file might be stale and you might need to remove it and try again.
                 event['reminders']['overrides'].append({'minutes': n,
                                                         'method': m})
 
-        newEvent = self._RetryWithBackoff(
+        newEvent = self._retry_with_backoff(
             self._cal_service().events().
             insert(calendarId=self.cals[0]['id'], body=event))
 
-        if self.detailUrl:
+        if self.detail_url:
             hLink = self._ShortenURL(newEvent['htmlLink'])
             print_msg(CLR_GRN(), 'New event added: %s\n' % hLink)
 
@@ -1845,7 +1859,8 @@ your cache file might be stale and you might need to remove it and try again.
 
     def Remind(self, minutes=10, command=None, use_reminders=False):
         """Check for events between now and now+minutes.
-           If use_reminders then only remind if now >= event['start'] - reminder"""
+           If use_reminders is True, then only remind if
+           now >= event['start'] - reminder"""
 
         if command is None:
             command = self.command
@@ -2071,7 +2086,7 @@ your cache file might be stale and you might need to remove it and try again.
                     continue
 
                 if not verbose:
-                    newEvent = self._RetryWithBackoff(
+                    newEvent = self._retry_with_backoff(
                         self._cal_service().events().
                         insert(calendarId=self.cals[0]['id'],
                                body=event))
@@ -2084,7 +2099,7 @@ your cache file might be stale and you might need to remove it and try again.
                 if not val or val.lower() == 's':
                     continue
                 if val.lower() == 'i':
-                    newEvent = self._RetryWithBackoff(
+                    newEvent = self._retry_with_backoff(
                         self._cal_service().events().
                         insert(calendarId=self.cals[0]['id'],
                                body=event))
@@ -2150,11 +2165,11 @@ gflags.DEFINE_string("client_id", __API_CLIENT_ID__, "API client_id")
 gflags.DEFINE_string("client_secret", __API_CLIENT_SECRET__,
                      "API client_secret")
 
-gflags.DEFINE_string("configFolder", None,
+gflags.DEFINE_string("config_folder", None,
                      "Optional directory to load/store all configuration "
                      "information")
 gflags.DEFINE_bool("includeRc", False,
-                   "Whether to include ~/.gcalclirc when using configFolder")
+                   "Whether to include ~/.gcalclirc when using config_folder")
 gflags.DEFINE_multistring("calendar", [], "Which calendars to use")
 gflags.DEFINE_multistring("default_calendar", [],
                           "Optional default calendar to use if no --calendar "
@@ -2279,16 +2294,16 @@ def main():
         usage(True)
         sys.exit(1)
 
-    if FLAGS.configFolder:
-        if not os.path.exists(os.path.expanduser(FLAGS.configFolder)):
-            os.makedirs(os.path.expanduser(FLAGS.configFolder))
+    if FLAGS.config_folder:
+        if not os.path.exists(os.path.expanduser(FLAGS.config_folder)):
+            os.makedirs(os.path.expanduser(FLAGS.config_folder))
         if os.path.exists(os.path.expanduser("%s/gcalclirc" %
-                                             FLAGS.configFolder)):
+                                             FLAGS.config_folder)):
             if not FLAGS.includeRc:
                 tmpArgv = argv + ["--flagfile=%s/gcalclirc" %
-                                  FLAGS.configFolder, ]
+                                  FLAGS.config_folder, ]
             else:
-                tmpArgv += ["--flagfile=%s/gcalclirc" % FLAGS.configFolder, ]
+                tmpArgv += ["--flagfile=%s/gcalclirc" % FLAGS.config_folder, ]
 
         FLAGS.Reset()
         args = FLAGS(tmpArgv)
@@ -2400,15 +2415,15 @@ def main():
     gcal = gcalcli(cal_names=cal_names,
                    cal_name_colors=cal_name_colors,
                    military=FLAGS.military,
-                   detailCalendar=FLAGS.detail_calendar,
-                   detailLocation=FLAGS.detail_location,
-                   detailAttendees=FLAGS.detail_attendees,
-                   detailAttachments=FLAGS.detail_attachments,
-                   detailLength=FLAGS.detail_length,
-                   detailReminders=FLAGS.detail_reminders,
-                   detailDescr=FLAGS.detail_description,
-                   detailDescrWidth=FLAGS.detail_description_width,
-                   detailUrl=FLAGS.detail_url,
+                   detail_calendar=FLAGS.detail_calendar,
+                   detail_location=FLAGS.detail_location,
+                   detail_attendees=FLAGS.detail_attendees,
+                   detail_attachments=FLAGS.detail_attachments,
+                   detail_length=FLAGS.detail_length,
+                   detail_reminder=FLAGS.detail_reminders,
+                   detail_descr=FLAGS.detail_description,
+                   detail_descr_width=FLAGS.detail_description_width,
+                   detail_url=FLAGS.detail_url,
                    detailEmail=FLAGS.detail_email,
                    ignoreStarted=not FLAGS.started,
                    ignoreDeclined=not FLAGS.declined,
@@ -2422,9 +2437,9 @@ def main():
                    nowMarkerColor=get_color(FLAGS.color_now_marker),
                    border_color=get_color(FLAGS.color_border),
                    tsv=FLAGS.tsv,
-                   refreshCache=FLAGS.refresh,
-                   useCache=FLAGS.cache,
-                   configFolder=FLAGS.configFolder,
+                   refresh_cache=FLAGS.refresh,
+                   use_cache=FLAGS.cache,
+                   config_folder=FLAGS.config_folder,
                    client_id=FLAGS.client_id,
                    client_secret=FLAGS.client_secret,
                    defaultReminders=FLAGS.default_reminders,
