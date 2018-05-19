@@ -201,7 +201,7 @@ __API_CLIENT_SECRET__ = '3tZSxItw6_VnZMezQwC8lUqy'
 
 
 # cPickle is a standard library, but in case someone did something really
-# dumb, fall back to pickle.  If that's not their, your python is fucked
+# dumb, fall back to pickle.  If that's not there, your python is fucked
 try:
     import cPickle as pickle
 except ImportError:
@@ -237,6 +237,8 @@ def usage(expanded=False):
     print(__doc__ % sys.argv[0])
     if expanded:
         print(FLAGS.MainModuleHelp())
+
+
 
 
 class CLR:
@@ -432,7 +434,7 @@ class DateTimeParser:
     def __init__(self):
         self.pdtCalendar = parsedatetime.Calendar()
 
-    def fromString(self, eWhen):
+    def from_string(self, eWhen):
         defaultDateTime = datetime.now(tzlocal()).replace(hour=0,
                                                           minute=0,
                                                           second=0,
@@ -449,66 +451,7 @@ class DateTimeParser:
         return eTimeStart
 
 
-def DaysSinceEpoch(dt):
-    # Because I hate magic numbers
-    __DAYS_IN_SECONDS__ = 24 * 60 * 60
-    return calendar.timegm(dt.timetuple()) / __DAYS_IN_SECONDS__
-
-
-def GetTimeFromStr(eWhen, eDuration=0):
-    dtp = DateTimeParser()
-
-    try:
-        eTimeStart = dtp.fromString(eWhen)
-    except:
-        print_err_msg('Date and time is invalid!\n')
-        sys.exit(1)
-
-    if FLAGS.allday:
-        try:
-            eTimeStop = eTimeStart + timedelta(days=float(eDuration))
-        except:
-            print_err_msg('Duration time (days) is invalid\n')
-            sys.exit(1)
-
-        sTimeStart = eTimeStart.date().isoformat()
-        sTimeStop = eTimeStop.date().isoformat()
-
-    else:
-        try:
-            eTimeStop = eTimeStart + timedelta(minutes=float(eDuration))
-        except:
-            print_err_msg('Duration time (minutes) is invalid\n')
-            sys.exit(1)
-
-        sTimeStart = eTimeStart.isoformat()
-        sTimeStop = eTimeStop.isoformat()
-
-    return sTimeStart, sTimeStop
-
-
-def ParseReminder(rem):
-    matchObj = re.match(r'^(\d+)([wdhm]?)(?:\s+(popup|email|sms))?$', rem)
-    if not matchObj:
-        print_err_msg('Invalid reminder: ' + rem + '\n')
-        sys.exit(1)
-    n = int(matchObj.group(1))
-    t = matchObj.group(2)
-    m = matchObj.group(3)
-    if t == 'w':
-        n = n * 7 * 24 * 60
-    elif t == 'd':
-        n = n * 24 * 60
-    elif t == 'h':
-        n = n * 60
-
-    if not m:
-        m = 'popup'
-
-    return n, m
-
-
-class gcalcli:
+class GoogleCalendarInterface:
 
     cache = {}
     all_cals = []
@@ -521,7 +464,7 @@ class gcalcli:
     cal_service = None
     urlService = None
     command = 'notify-send -u critical -a gcalcli %s'
-    dateParser = DateTimeParser()
+    date_parser = DateTimeParser()
 
     ACCESS_OWNER = 'owner'
     ACCESS_WRITER = 'writer'
@@ -543,8 +486,8 @@ class gcalcli:
                  detail_descr=False,
                  detail_descr_width=80,
                  detail_url=None,
-                 detailEmail=False,
-                 ignoreStarted=False,
+                 detail_email=False,
+                 ignore_started=False,
                  ignoreDeclined=False,
                  calWidth=10,
                  calMonday=False,
@@ -565,7 +508,7 @@ class gcalcli:
                  all_day=False):
 
         self.military = military
-        self.ignoreStarted = ignoreStarted
+        self.ignore_started = ignore_started
         self.ignoreDeclined = ignoreDeclined
         self.calWidth = calWidth
         self.calMonday = calMonday
@@ -584,7 +527,7 @@ class gcalcli:
         self.detail_url = detail_url
         self.detail_attendees = detail_attendees
         self.detail_attachments = detail_attachments
-        self.detailEmail = detailEmail
+        self.detail_email = detail_email
 
         self.calOwnerColor = calOwnerColor
         self.calWriterColor = calWriterColor
@@ -947,7 +890,7 @@ class gcalcli:
 
         return (cutWidth, cut)
 
-    def _GraphEvents(self, cmd, startDateTime, count, event_list):
+    def _graph_events(self, cmd, startDateTime, count, event_list):
 
         # ignore started events (i.e. events that start previous day and end
         # start day)
@@ -1143,7 +1086,7 @@ class gcalcli:
 
     def _tsv(self, startDateTime, event_list):
         for event in event_list:
-            if self.ignoreStarted and (event['s'] < self.now):
+            if self.ignore_started and (event['s'] < self.now):
                 continue
             output = "%s\t%s\t%s\t%s" % (event['s'].strftime('%Y-%m-%d'),
                                          event['s'].strftime('%H:%M'),
@@ -1169,7 +1112,7 @@ class gcalcli:
             if self.detail_calendar:
                 output += "\t%s" % event['gcalcli_cal']['summary'].strip()
 
-            if self.detailEmail:
+            if self.detail_email:
                 output += "\t%s" % (event['creator']['email'].strip()
                                     if 'email' in event['creator'] else '')
 
@@ -1310,7 +1253,7 @@ class gcalcli:
                            (detailsIndent, rem['method'], rem['minutes'])
                     print_msg(CLR_NRM(), xstr)
 
-        if self.detailEmail and \
+        if self.detail_email and \
            'email' in event['creator'] and \
            event['creator']['email'].strip():
             xstr = "%s  Email: %s\n" % (
@@ -1517,7 +1460,7 @@ class gcalcli:
 
         for event in event_list:
 
-            if self.ignoreStarted and (event['s'] < self.now):
+            if self.ignore_started and (event['s'] < self.now):
                 continue
             if self.ignoreDeclined:
                 if 'attendees' in event:
@@ -1611,6 +1554,7 @@ class gcalcli:
         return event_list
 
     def list_all_calendars(self):
+
         access_len = 0
 
         for cal in self.all_cals:
@@ -1621,14 +1565,15 @@ class gcalcli:
         if access_len < len('Access'):
             access_len = len('Access')
 
-        format = ' %0' + str(access_len) + 's  %s\n'
+        table_format = ' %0' + str(access_len) + 's  %s\n'
 
-        print_msg(CLR_BRYLW(), format % ('Access', 'Title'))
-        print_msg(CLR_BRYLW(), format % ('------', '-----'))
+        print_msg(CLR_BRYLW(), table_format % ('Access', 'Title'))
+        print_msg(CLR_BRYLW(), table_format % ('------', '-----'))
 
         for cal in self.all_cals:
             print_msg(self._calendar_color(cal),
-                      format % (cal['accessRole'], cal['summary']))
+                      table_format % (cal['accessRole'], cal['summary']))
+
 
     def text_query(self, searchText='', start_text='', end_text=''):
         # the empty string would get *ALL* events...
@@ -1642,10 +1587,10 @@ class gcalcli:
         #       Don't forget to clean up agenda_query too!
 
         if start_text == '':
-            start = self.now if self.ignoreStarted else None
+            start = self.now if self.ignore_started else None
         else:
             try:
-                start = self.dateParser.fromString(start_text)
+                start = self.date_parser.from_string(start_text)
             except:
                 print_err_msg('Error: failed to parse start time\n')
                 return
@@ -1654,7 +1599,7 @@ class gcalcli:
             end = None
         else:
             try:
-                end = self.dateParser.fromString(end_text)
+                end = self.date_parser.from_string(end_text)
             except:
                 print_err_msg('Error: failed to parse end time\n')
                 return
@@ -1676,7 +1621,7 @@ class gcalcli:
                                      microsecond=0)
         else:
             try:
-                start = self.dateParser.fromString(start_text)
+                start = self.date_parser.from_string(start_text)
             except:
                 print_err_msg('Error: failed to parse start time\n')
                 return
@@ -1684,14 +1629,14 @@ class gcalcli:
         # Again optimizing calls to the api.  If we've been told to
         # ignore started events, then it doesn't make ANY sense to
         # search for things that may be in the past
-        if self.ignoreStarted and start < self.now:
+        if self.ignore_started and start < self.now:
             start = self.now
 
         if end_text == '':
             end = (start + timedelta(days=self.agendaLength))
         else:
             try:
-                end = self.dateParser.fromString(end_text)
+                end = self.date_parser.from_string(end_text)
             except:
                 print_err_msg('Error: failed to parse end time\n')
                 return
@@ -1703,7 +1648,7 @@ class gcalcli:
         else:
             self._iterate_events(start, event_list, yearDate=False)
 
-    def CalQuery(self, cmd, start_text='', count=1):
+    def cal_query(self, cmd, start_text='', count=1):
 
         if start_text == '':
             # convert now to midnight this morning and use for default
@@ -1713,7 +1658,7 @@ class gcalcli:
                                      microsecond=0)
         else:
             try:
-                start = self.dateParser.fromString(start_text)
+                start = self.date_parser.from_string(start_text)
                 start = start.replace(hour=0, minute=0, second=0,
                                       microsecond=0)
             except:
@@ -1744,13 +1689,13 @@ class gcalcli:
                 if offsetDays < 0:
                     offsetDays = 6
             totalDays = (daysInMonth + offsetDays)
-            count = (totalDays / 7)
+            count = (totalDays // 7)
             if totalDays % 7:
                 count += 1
 
         event_list = self._search_for_cal_events(start, end, None)
 
-        self._GraphEvents(cmd, start, count, event_list)
+        self._graph_events(cmd, start, count, event_list)
 
     def quick_add_event(self, eventText, reminder=None):
 
@@ -2111,6 +2056,66 @@ your cache file might be stale and you might need to remove it and try again.
                     print_err_msg('Error: invalid input\n')
                     sys.exit(1)
 
+def DaysSinceEpoch(dt):
+    # Because I hate magic numbers
+    __DAYS_IN_SECONDS__ = 24 * 60 * 60
+    return calendar.timegm(dt.timetuple()) / __DAYS_IN_SECONDS__
+
+
+def GetTimeFromStr(eWhen, eDuration=0):
+    dtp = DateTimeParser()
+
+    try:
+        eTimeStart = dtp.from_string(eWhen)
+    except:
+        print_err_msg('Date and time is invalid!\n')
+        sys.exit(1)
+
+    if FLAGS.allday:
+        try:
+            eTimeStop = eTimeStart + timedelta(days=float(eDuration))
+        except:
+            print_err_msg('Duration time (days) is invalid\n')
+            sys.exit(1)
+
+        sTimeStart = eTimeStart.date().isoformat()
+        sTimeStop = eTimeStop.date().isoformat()
+
+    else:
+        try:
+            eTimeStop = eTimeStart + timedelta(minutes=float(eDuration))
+        except:
+            print_err_msg('Duration time (minutes) is invalid\n')
+            sys.exit(1)
+
+        sTimeStart = eTimeStart.isoformat()
+        sTimeStop = eTimeStop.isoformat()
+
+    return sTimeStart, sTimeStop
+
+
+def ParseReminder(rem):
+    matchObj = re.match(r'^(\d+)([wdhm]?)(?:\s+(popup|email|sms))?$', rem)
+    if not matchObj:
+        print_err_msg('Invalid reminder: ' + rem + '\n')
+        sys.exit(1)
+    n = int(matchObj.group(1))
+    t = matchObj.group(2)
+    m = matchObj.group(3)
+    if t == 'w':
+        n = n * 7 * 24 * 60
+    elif t == 'd':
+        n = n * 24 * 60
+    elif t == 'h':
+        n = n * 60
+
+    if not m:
+        m = 'popup'
+
+    return n, m
+
+
+
 
 def get_color(value):
     colors = {'default': CLR_NRM(),
@@ -2412,39 +2417,39 @@ def main():
         if 'email' in FLAGS.details:
             FLAGS['detail_email'].value = True
 
-    gcal = gcalcli(cal_names=cal_names,
-                   cal_name_colors=cal_name_colors,
-                   military=FLAGS.military,
-                   detail_calendar=FLAGS.detail_calendar,
-                   detail_location=FLAGS.detail_location,
-                   detail_attendees=FLAGS.detail_attendees,
-                   detail_attachments=FLAGS.detail_attachments,
-                   detail_length=FLAGS.detail_length,
-                   detail_reminder=FLAGS.detail_reminders,
-                   detail_descr=FLAGS.detail_description,
-                   detail_descr_width=FLAGS.detail_description_width,
-                   detail_url=FLAGS.detail_url,
-                   detailEmail=FLAGS.detail_email,
-                   ignoreStarted=not FLAGS.started,
-                   ignoreDeclined=not FLAGS.declined,
-                   calWidth=FLAGS.width,
-                   calMonday=FLAGS.monday,
-                   calOwnerColor=get_color(FLAGS.color_owner),
-                   calWriterColor=get_color(FLAGS.color_writer),
-                   calReaderColor=get_color(FLAGS.color_reader),
-                   calFreeBusyColor=get_color(FLAGS.color_freebusy),
-                   date_color=get_color(FLAGS.color_date),
-                   nowMarkerColor=get_color(FLAGS.color_now_marker),
-                   border_color=get_color(FLAGS.color_border),
-                   tsv=FLAGS.tsv,
-                   refresh_cache=FLAGS.refresh,
-                   use_cache=FLAGS.cache,
-                   config_folder=FLAGS.config_folder,
-                   client_id=FLAGS.client_id,
-                   client_secret=FLAGS.client_secret,
-                   defaultReminders=FLAGS.default_reminders,
-                   all_day=FLAGS.allday
-                   )
+    gcal = GoogleCalendarInterface(
+            cal_names=cal_names,
+            cal_name_colors=cal_name_colors,
+            military=FLAGS.military,
+            detail_calendar=FLAGS.detail_calendar,
+            detail_location=FLAGS.detail_location,
+            detail_attendees=FLAGS.detail_attendees,
+            detail_attachments=FLAGS.detail_attachments,
+            detail_length=FLAGS.detail_length,
+            detail_reminder=FLAGS.detail_reminders,
+            detail_descr=FLAGS.detail_description,
+            detail_descr_width=FLAGS.detail_description_width,
+            detail_url=FLAGS.detail_url,
+            detail_email=FLAGS.detail_email,
+            ignore_started=not FLAGS.started,
+            ignoreDeclined=not FLAGS.declined,
+            calWidth=FLAGS.width,
+            calMonday=FLAGS.monday,
+            calOwnerColor=get_color(FLAGS.color_owner),
+            calWriterColor=get_color(FLAGS.color_writer),
+            calReaderColor=get_color(FLAGS.color_reader),
+            calFreeBusyColor=get_color(FLAGS.color_freebusy),
+            date_color=get_color(FLAGS.color_date),
+            nowMarkerColor=get_color(FLAGS.color_now_marker),
+            border_color=get_color(FLAGS.color_border),
+            tsv=FLAGS.tsv,
+            refresh_cache=FLAGS.refresh,
+            use_cache=FLAGS.cache,
+            config_folder=FLAGS.config_folder,
+            client_id=FLAGS.client_id,
+            client_secret=FLAGS.client_secret,
+            defaultReminders=FLAGS.default_reminders,
+            all_day=FLAGS.allday)
 
     if args[0] == 'list':
         gcal.list_all_calendars()
@@ -2492,11 +2497,11 @@ def main():
                 sys.exit(1)
 
         if len(args) == 3:  # weeks and start
-            gcal.CalQuery(args[0], count=int(args[1]), start_text=args[2])
+            gcal.cal_query(args[0], count=int(args[1]), start_text=args[2])
         elif len(args) == 2:  # weeks
-            gcal.CalQuery(args[0], count=int(args[1]))
+            gcal.cal_query(args[0], count=int(args[1]))
         elif len(args) == 1:  # defaults
-            gcal.CalQuery(args[0])
+            gcal.cal_query(args[0])
         else:
             print_err_msg('Error: invalid calw arguments\n')
             sys.exit(1)
@@ -2509,9 +2514,9 @@ def main():
             sys.exit(1)
 
         if len(args) == 2:  # start
-            gcal.CalQuery(args[0], start_text=args[1])
+            gcal.cal_query(args[0], start_text=args[1])
         elif len(args) == 1:  # defaults
-            gcal.CalQuery(args[0])
+            gcal.cal_query(args[0])
         else:
             print_err_msg('Error: invalid calm arguments\n')
             sys.exit(1)
@@ -2569,10 +2574,10 @@ def main():
             print_err_msg('Error: invalid search string\n')
             sys.exit(1)
         elif len(args) == 4:  # search, start, end
-            eStart = gcal.dateParser.fromString(args[2])
-            eEnd = gcal.dateParser.fromString(args[3])
+            eStart = gcal.date_parser.from_string(args[2])
+            eEnd = gcal.date_parser.from_string(args[3])
         elif len(args) == 3:  # search, start (default end)
-            eStart = gcal.dateParser.fromString(args[2])
+            eStart = gcal.date_parser.from_string(args[2])
 
         gcal.delete_events(args[1], FLAGS.iamaexpert, eStart, eEnd)
 
