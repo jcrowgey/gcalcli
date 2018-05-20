@@ -462,7 +462,7 @@ class GoogleCalendarInterface:
     maxRetries = 5
     authHttp = None
     cal_service = None
-    urlService = None
+    url_service = None
     command = 'notify-send -u critical -a gcalcli %s'
     date_parser = DateTimeParser()
 
@@ -629,15 +629,15 @@ class GoogleCalendarInterface:
 
         return self.cal_service
 
-    def _UrlService(self):
-        if not self.urlService:
+    def _url_service(self):
+        if not self.url_service:
             self._GoogleAuth()
-            self.urlService = \
+            self.url_service = \
                 build(serviceName='urlshortener',
                       version='v1',
                       http=self._GoogleAuth())
 
-        return self.urlService
+        return self.url_service
 
     def _get_cached(self):
         if self.config_folder:
@@ -671,6 +671,7 @@ class GoogleCalendarInterface:
         cal_list = self._retry_with_backoff(
             self._cal_service().calendarList().list())
 
+
         while True:
             for cal in cal_list['items']:
                 self.all_cals.append(cal)
@@ -701,7 +702,7 @@ class GoogleCalendarInterface:
         # Note that when authenticated to a google account different shortUrls
         # can be returned for the same longUrl. See: http://goo.gl/Ya0A9
         shortUrl = self._retry_with_backoff(
-            self._UrlService().url().insert(body={'longUrl': url}))
+            self._url_service().url().insert(body={'longUrl': url}))
         return shortUrl['id']
 
     def _calendar_color(self, cal):
@@ -1299,7 +1300,7 @@ class GoogleCalendarInterface:
                 )
             print_msg(CLR_NRM(), xstr)
 
-    def _DeleteEvent(self, event):
+    def _delete_event(self, event):
 
         if self.iamaExpert:
             self._retry_with_backoff(
@@ -1789,7 +1790,7 @@ your cache file might be stale and you might need to remove it and try again.
 
         self.iamaExpert = expert
         self._iterate_events(self.now, event_list,
-                             yearDate=True, work=self._DeleteEvent)
+                             yearDate=True, work=self._delete_event)
 
     def EditEvents(self, searchText=''):
 
