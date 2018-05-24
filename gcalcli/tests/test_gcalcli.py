@@ -1,16 +1,20 @@
 from gcalcli.gcalcli import GoogleCalendarInterface
 from apiclient.discovery import Resource, HttpMock, build
 import pytest
+import os
+
+TEST_DATA_DIR = os.path.dirname(os.path.abspath(__file__)) + '/data'
+
 
 
 def mocked_calendar_service(self):
-    http = HttpMock('data/cal_service_discovery.json', {'status': '200'})
+    http = HttpMock(TEST_DATA_DIR + '/cal_service_discovery.json', {'status': '200'})
     self._cal_service = build(serviceName='calendar', version='v3', http=http)
     return self._cal_service
 
 
 def mocked_calendar_list(self):
-    http = HttpMock('data/cal_list.json', {'status': '200'})
+    http = HttpMock(TEST_DATA_DIR + '/cal_list.json', {'status': '200'})
     request = self._cal_service().calendarList().list()
     cal_list = request.execute(http=http)
     self.all_cals = [cal for cal in cal_list['items']]
@@ -26,4 +30,5 @@ def gcal(monkeypatch):
     
 
 def test_list(gcal):
-    gcal.list_all_calendars()
+    assert 6 == len(gcal.all_cals)
+    # assert gcal.list_all_calendars()

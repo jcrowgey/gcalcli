@@ -1,5 +1,7 @@
 build/
 dist/
 venv/
+.tox/
 gcalcli.egg-info
 *__pycache__
+*pytest_cache
