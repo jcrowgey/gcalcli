@@ -20,9 +20,9 @@ Requirements
 ------------
 
 * [Python 3](http://www.python.org)
-* [Google API Client](https://developers.google.com/api-client-library/python) Python 2 module
-* [dateutil](http://www.labix.org/python-dateutil) Python 2 module
-* [gflags](https://code.google.com/p/python-gflags/) Python 2 module
+* [Google API Client](https://developers.google.com/api-client-library/python) Python 3 module
+* [dateutil](http://www.labix.org/python-dateutil) Python 3 module
+* [gflags](https://code.google.com/p/python-gflags/) Python 3 module
 * A love for the command line!
 
 ### Optional packages
