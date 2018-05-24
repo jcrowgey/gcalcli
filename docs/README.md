@@ -1,5 +1,9 @@
-gcalcli
+gcalcli [![Build Status](https://travis-ci.com/jcrowgey/gcalcli.svg?branch=master)](https://travis-ci.com/jcrowgey/gcalcli)
 =======
+
+NOTE: Under Construction.  I think that the original authors have abandoned gcalcli and so 
+I'm undertaking a rewrite into python3, adding unit tests, modernizing dependencies, 
+refactoring, etc, etc.  Get in touch with me if you want to help out.
 
 #### Google Calendar Command Line Interface
 
@@ -15,7 +19,7 @@ gcalcli uses the [Google Calendar API version 3](https://developers.google.com/g
 Requirements
 ------------
 
-* [Python 2](http://www.python.org)
+* [Python 3](http://www.python.org)
 * [Google API Client](https://developers.google.com/api-client-library/python) Python 2 module
 * [dateutil](http://www.labix.org/python-dateutil) Python 2 module
 * [gflags](https://code.google.com/p/python-gflags/) Python 2 module
