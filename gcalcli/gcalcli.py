@@ -211,7 +211,7 @@ except ImportError:
 # not, we just return a fake failure every time and use only dateutil.
 try:
     from parsedatetime import parsedatetime
-except:
+except Exception:
     class parsedatetime:
         class Calendar:
             def parse(self, string):
@@ -224,7 +224,7 @@ def setup_run_flow_flags():
     flags = Namespace()
     flags.logging_level = 'INFO'
     flags.noauth_local_webserver = True
-    flags.auth_host_port = [8080, 8090] 
+    flags.auth_host_port = [8080, 8090]
     flags.auth_host_name = 'localhost'
     return flags
 
@@ -237,8 +237,6 @@ def usage(expanded=False):
     print(__doc__ % sys.argv[0])
     if expanded:
         print(FLAGS.MainModuleHelp())
-
-
 
 
 class CLR:
@@ -442,7 +440,7 @@ class DateTimeParser:
 
         try:
             eTimeStart = parse(eWhen, default=defaultDateTime)
-        except:
+        except Exception:
             struct, result = self.pdtCalendar.parse(eWhen)
             if not result:
                 raise ValueError("Date and time is invalid")
@@ -670,7 +668,6 @@ class GoogleCalendarInterface:
 
         cal_list = self._retry_with_backoff(
             self._cal_service().calendarList().list())
-
 
         while True:
             for cal in cal_list['items']:
@@ -1575,7 +1572,6 @@ class GoogleCalendarInterface:
             print_msg(self._calendar_color(cal),
                       table_format % (cal['accessRole'], cal['summary']))
 
-
     def text_query(self, searchText='', start_text='', end_text=''):
         # the empty string would get *ALL* events...
         if searchText == '':
@@ -1592,7 +1588,7 @@ class GoogleCalendarInterface:
         else:
             try:
                 start = self.date_parser.from_string(start_text)
-            except:
+            except Exception:
                 print_err_msg('Error: failed to parse start time\n')
                 return
 
@@ -1601,7 +1597,7 @@ class GoogleCalendarInterface:
         else:
             try:
                 end = self.date_parser.from_string(end_text)
-            except:
+            except Exception:
                 print_err_msg('Error: failed to parse end time\n')
                 return
 
@@ -1623,7 +1619,7 @@ class GoogleCalendarInterface:
         else:
             try:
                 start = self.date_parser.from_string(start_text)
-            except:
+            except Exception:
                 print_err_msg('Error: failed to parse start time\n')
                 return
 
@@ -1638,7 +1634,7 @@ class GoogleCalendarInterface:
         else:
             try:
                 end = self.date_parser.from_string(end_text)
-            except:
+            except Exception:
                 print_err_msg('Error: failed to parse end time\n')
                 return
 
@@ -1662,7 +1658,7 @@ class GoogleCalendarInterface:
                 start = self.date_parser.from_string(start_text)
                 start = start.replace(hour=0, minute=0, second=0,
                                       microsecond=0)
-            except:
+            except Exception:
                 print_err_msg('Error: failed to parse start time\n')
                 return
 
@@ -1994,7 +1990,7 @@ your cache file might be stale and you might need to remove it and try again.
 
         try:
             import vobject
-        except:
+        except ImportError:
             print_err_msg('Python vobject module not installed!\n')
             sys.exit(1)
 
@@ -2057,6 +2053,7 @@ your cache file might be stale and you might need to remove it and try again.
                     print_err_msg('Error: invalid input\n')
                     sys.exit(1)
 
+
 def DaysSinceEpoch(dt):
     # Because I hate magic numbers
     __DAYS_IN_SECONDS__ = 24 * 60 * 60
@@ -2068,14 +2065,14 @@ def GetTimeFromStr(eWhen, eDuration=0):
 
     try:
         eTimeStart = dtp.from_string(eWhen)
-    except:
+    except Exception:
         print_err_msg('Date and time is invalid!\n')
         sys.exit(1)
 
     if FLAGS.allday:
         try:
             eTimeStop = eTimeStart + timedelta(days=float(eDuration))
-        except:
+        except Exception:
             print_err_msg('Duration time (days) is invalid\n')
             sys.exit(1)
 
@@ -2085,7 +2082,7 @@ def GetTimeFromStr(eWhen, eDuration=0):
     else:
         try:
             eTimeStop = eTimeStart + timedelta(minutes=float(eDuration))
-        except:
+        except Exception:
             print_err_msg('Duration time (minutes) is invalid\n')
             sys.exit(1)
 
@@ -2114,8 +2111,6 @@ def ParseReminder(rem):
         m = 'popup'
 
     return n, m
-
-
 
 
 def get_color(value):
@@ -2493,7 +2488,7 @@ def main():
             try:
                 # Test to make sure args[1] is a number
                 int(args[1])
-            except:
+            except Exception:
                 print_err_msg('Error: invalid calw arguments\n')
                 sys.exit(1)
 

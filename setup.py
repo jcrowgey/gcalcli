@@ -9,7 +9,7 @@ try:
     long_description = pypandoc.convert('README.md', 'rst',
                                         format='markdown_github',
                                         extra_args=("--no-wrap",))
-except:
+except Exception:
     long_description = ''
 
 setup(name='gcalcli',
@@ -20,7 +20,7 @@ setup(name='gcalcli',
       long_description=long_description,
       url='https://github.com/jcrowgey/gcalcli',
       license='MIT',
-      packages = ['gcalcli'],
+      packages=['gcalcli'],
       install_requires=[
           'python-dateutil',
           'python-gflags',
@@ -32,7 +32,7 @@ setup(name='gcalcli',
           'vobject':  ["vobject"],
           'parsedatetime': ["parsedatetime"],
       },
-      entry_points = {
+      entry_points={
           'console_scripts':
               ['gcalcli=gcalcli.gcalcli:main'],
       },
