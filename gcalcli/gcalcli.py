@@ -408,11 +408,8 @@ def print_err_msg(msg):
 
 def print_msg(color, msg):
     if CLR.use_color:
-        sys.stdout.write(str(color))
-        sys.stdout.write(msg)
-        sys.stdout.write(str(CLR_NRM()))
-    else:
-        sys.stdout.write(msg)
+        msg = str(color) + msg + str(CLR_NRM())
+    sys.stdout.write(msg)
 
 
 def DebugPrint(msg):
@@ -1398,7 +1395,7 @@ class GoogleCalendarInterface:
                 if val.strip():
                     td = (event['e'] - event['s'])
                     length = ((td.days * 1440) + (td.seconds / 60))
-                    new_start, new_end = GetTimeFromStr(val.strip(), length)
+                    new_start, new_end = get_time_from_str(val.strip(), length)
                     event = self._set_event_start_end(
                                 new_start, new_end, event)
 
@@ -1406,8 +1403,8 @@ class GoogleCalendarInterface:
                 print_msg(CLR_MAG(), "Length (mins): ")
                 val = input()
                 if val.strip():
-                    new_start, new_end = \
-                        GetTimeFromStr(event['start']['dateTime'], val.strip())
+                    new_start, new_end = get_time_from_str(
+                            event['start']['dateTime'], val.strip())
                     event = self._set_event_start_end(
                                 new_start, new_end, event)
 
@@ -1425,7 +1422,7 @@ class GoogleCalendarInterface:
                     event['reminders'] = {'useDefault': False,
                                           'overrides': []}
                     for r in rem:
-                        n, m = ParseReminder(r)
+                        n, m = parse_reminder(r)
                         event['reminders']['overrides'].append({'minutes': n,
                                                                 'method': m})
                 else:
@@ -1720,7 +1717,7 @@ your cache file might be stale and you might need to remove it and try again.
             rem['reminders'] = {'useDefault': False,
                                 'overrides': []}
             for r in reminder:
-                n, m = ParseReminder(r)
+                n, m = parse_reminder(r)
                 rem['reminders']['overrides'].append({'minutes': n,
                                                       'method': m})
 
@@ -1734,7 +1731,7 @@ your cache file might be stale and you might need to remove it and try again.
             hLink = self._ShortenURL(newEvent['htmlLink'])
             print_msg(CLR_GRN(), 'New event added: %s\n' % hLink)
 
-    def AddEvent(self, eTitle, eWhere, eStart, eEnd, eDescr, eWho, reminder):
+    def add_event(self, eTitle, eWhere, eStart, eEnd, eDescr, eWho, reminder):
 
         if len(self.cals) != 1:
             print_err_msg("Must specify a single calendar\n")
@@ -1764,7 +1761,7 @@ your cache file might be stale and you might need to remove it and try again.
             event['reminders'] = {'useDefault': False,
                                   'overrides': []}
             for r in reminder:
-                n, m = ParseReminder(r)
+                n, m = parse_reminder(r)
                 event['reminders']['overrides'].append({'minutes': n,
                                                         'method': m})
 
@@ -1934,7 +1931,7 @@ your cache file might be stale and you might need to remove it and try again.
                     event['reminders'] = {'useDefault': False,
                                           'overrides': []}
                     for r in reminder:
-                        n, m = ParseReminder(r)
+                        n, m = parse_reminder(r)
                         event['reminders']['overrides'].append({'minutes': n,
                                                                 'method': m})
 
@@ -2060,39 +2057,39 @@ def DaysSinceEpoch(dt):
     return calendar.timegm(dt.timetuple()) / __DAYS_IN_SECONDS__
 
 
-def GetTimeFromStr(eWhen, eDuration=0):
+def get_time_from_str(e_when, e_duration=0):
     dtp = DateTimeParser()
 
     try:
-        eTimeStart = dtp.from_string(eWhen)
+        e_time_start = dtp.from_string(e_when)
     except Exception:
         print_err_msg('Date and time is invalid!\n')
         sys.exit(1)
 
     if FLAGS.allday:
         try:
-            eTimeStop = eTimeStart + timedelta(days=float(eDuration))
+            e_time_stop = e_time_start + timedelta(days=float(e_duration))
         except Exception:
             print_err_msg('Duration time (days) is invalid\n')
             sys.exit(1)
 
-        sTimeStart = eTimeStart.date().isoformat()
-        sTimeStop = eTimeStop.date().isoformat()
+        s_time_start = e_time_start.date().isoformat()
+        s_time_stop = e_time_stop.date().isoformat()
 
     else:
         try:
-            eTimeStop = eTimeStart + timedelta(minutes=float(eDuration))
+            e_time_stop = e_time_start + timedelta(minutes=float(e_duration))
         except Exception:
             print_err_msg('Duration time (minutes) is invalid\n')
             sys.exit(1)
 
-        sTimeStart = eTimeStart.isoformat()
-        sTimeStop = eTimeStop.isoformat()
+        s_time_start = e_time_start.isoformat()
+        s_time_stop = e_time_stop.isoformat()
 
-    return sTimeStart, sTimeStop
+    return s_time_start, s_time_stop
 
 
-def ParseReminder(rem):
+def parse_reminder(rem):
     matchObj = re.match(r'^(\d+)([wdhm]?)(?:\s+(popup|email|sms))?$', rem)
     if not matchObj:
         print_err_msg('Invalid reminder: ' + rem + '\n')
@@ -2260,7 +2257,7 @@ gflags.RegisterValidator("details",
                              "shorturl", "url", "attendees", "attachments",
                              "email"] for x in value))
 gflags.RegisterValidator("reminder",
-                         lambda value: all(ParseReminder(x) for x in value))
+                         lambda value: all(parse_reminder(x) for x in value))
 gflags.RegisterValidator("color_owner",
                          lambda value: get_color(value) is not None)
 gflags.RegisterValidator("color_writer",
@@ -2553,15 +2550,15 @@ def main():
                     r = input()
                     if r == '.':
                         break
-                    n, m = ParseReminder(str(r))
+                    n, m = parse_reminder(str(r))
                     FLAGS.reminder.append(str(n) + ' ' + m)
 
         # calculate "when" time:
-        eStart, eEnd = GetTimeFromStr(FLAGS.when, FLAGS.duration)
+        e_start, e_end = get_time_from_str(FLAGS.when, FLAGS.duration)
 
-        gcal.AddEvent(FLAGS.title, FLAGS.where, eStart, eEnd,
-                      FLAGS.description, FLAGS.who,
-                      FLAGS.reminder)
+        gcal.add_event(FLAGS.title, FLAGS.where, e_start, e_end,
+                       FLAGS.description, FLAGS.who,
+                       FLAGS.reminder)
 
     elif args[0] == 'delete':
         eStart = None
