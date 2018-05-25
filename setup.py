@@ -34,7 +34,7 @@ setup(name='gcalcli',
       },
       entry_points={
           'console_scripts':
-              ['gcalcli=gcalcli.gcalcli:main'],
+              ['gcalcli=gcalcli.cli:main'],
       },
       classifiers=[
           "Development Status :: 5 - Production/Stable",

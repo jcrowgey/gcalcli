@@ -1,6 +1,7 @@
-from gcalcli.gcalcli import (
-        GoogleCalendarInterface, print_msg, CLR_BRRED, CLR_NRM,
-        get_time_from_str, FLAGS)
+from gcalcli import colors
+from gcalcli.gcal import GoogleCalendarInterface
+from gcalcli.cli import print_msg
+from gcalcli.utils import get_time_from_str
 from apiclient.discovery import HttpMock, build
 import pytest
 import os
@@ -52,13 +53,12 @@ def test_list(gcal):
 
 @pytest.fixture
 def test_print_msg(capsys):
-    print_msg(CLR_BRRED(), 'test')
+    print_msg(colors.CLR_BRRED(), 'test')
     captured = capsys.readouterr()
-    assert captured == str(CLR_BRRED()) + 'test' + str(CLR_NRM())
+    assert captured == str(colors.CLR_BRRED()) + 'test' + str(colors.CLR_NRM())
 
 
 def test_get_time_from_str():
-    FLAGS([])
     begin_2018_gmt = '2018-01-01T00:00:00+00:00'
     two_hrs_later = '2018-01-01T02:00:00+00:00'
     assert (begin_2018_gmt, two_hrs_later) == \
