@@ -1763,18 +1763,3 @@ def parse_reminder(rem):
         m = 'popup'
 
     return n, m
-
-
-def get_cal_colors(cal_names):
-    cal_colors = {}
-    for cal_name in cal_names:
-        cal_name_parts = cal_name.split("#")
-        cal_name_simple = cal_name_parts[0]
-        cal_color = cal_colors.get(cal_name_simple)
-        if len(cal_name_parts) > 0:
-            cal_color_raw = cal_name_parts[-1]
-            cal_color_new = colors.get_color(cal_color_raw)
-            if cal_color_new is not None:
-                cal_color = cal_color_new
-        cal_colors[cal_name_simple] = cal_color
-    return cal_colors

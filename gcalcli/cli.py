@@ -83,132 +83,6 @@ except ImportError as e:
 #############################################################################
 
 
-FLAGS = gflags.FLAGS
-# allow mixing of commands and options
-FLAGS.UseGnuGetOpt()
-
-gflags.DEFINE_bool("help", None, "Show this help")
-gflags.DEFINE_bool("helpshort", None, "Show command help only")
-gflags.DEFINE_bool("version", False, "Show the version and exit")
-
-gflags.DEFINE_string("client_id", __API_CLIENT_ID__, "API client_id")
-gflags.DEFINE_string("client_secret", __API_CLIENT_SECRET__,
-                     "API client_secret")
-
-gflags.DEFINE_string("config_folder", None,
-                     "Optional directory to load/store all configuration "
-                     "information")
-gflags.DEFINE_bool("includeRc", False,
-                   "Whether to include ~/.gcalclirc when using config_folder")
-gflags.DEFINE_multistring("calendar", [], "Which calendars to use")
-gflags.DEFINE_multistring("default_calendar", [],
-                          "Optional default calendar to use if no --calendar "
-                          "options are given")
-gflags.DEFINE_bool("military", False, "Use 24 hour display")
-
-# Single --detail that allows you to specify what parts you want
-gflags.DEFINE_multistring("details", [], "Which parts to display, can be: "
-                          "'all', 'calendar', 'location', 'length', "
-                          "'reminders', 'description', 'longurl', 'shorturl', "
-                          "'url', 'attendees', 'email'")
-# old style flags for backwards compatibility
-gflags.DEFINE_bool("detail_all", False, "Display all details")
-gflags.DEFINE_bool("detail_calendar", False, "Display calendar name")
-gflags.DEFINE_bool("detail_location", False, "Display event location")
-gflags.DEFINE_bool("detail_attendees", False, "Display event attendees")
-gflags.DEFINE_bool("detail_attachments", False, "Display event attachments")
-gflags.DEFINE_bool("detail_length", False, "Display length of event")
-gflags.DEFINE_bool("detail_reminders", False, "Display reminders")
-gflags.DEFINE_bool("detail_description", False, "Display description")
-gflags.DEFINE_bool("detail_email", False, "Display creator email")
-gflags.DEFINE_integer("detail_description_width", 80, "Set description width")
-gflags.DEFINE_enum("detail_url", None, ["long", "short"], "Set URL output")
-
-gflags.DEFINE_bool("tsv", False, "Use Tab Separated Value output")
-gflags.DEFINE_bool("started", True, "Show events that have started")
-gflags.DEFINE_bool("declined", True, "Show events that have been declined")
-gflags.DEFINE_integer("width", 10, "Set output width", short_name="w")
-gflags.DEFINE_bool("monday", False, "Start the week on Monday")
-gflags.DEFINE_bool("color", True, "Enable/Disable all color output")
-gflags.DEFINE_bool("lineart", True, "Enable/Disable line art")
-gflags.DEFINE_bool("conky", False, "Use Conky color codes")
-
-gflags.DEFINE_string("color_owner", "cyan", "Color for owned calendars")
-gflags.DEFINE_string("color_writer", "green", "Color for writable calendars")
-gflags.DEFINE_string("color_reader", "magenta",
-                     "Color for read-only calendars")
-gflags.DEFINE_string("color_freebusy", "default",
-                     "Color for free/busy calendars")
-gflags.DEFINE_string("color_date", "yellow", "Color for the date")
-gflags.DEFINE_string("color_now_marker", "brightred",
-                     "Color for the now marker")
-gflags.DEFINE_string("color_border", "white", "Color of line borders")
-
-gflags.DEFINE_string("locale", None, "System locale")
-
-gflags.DEFINE_multistring("reminder", [],
-                          "Reminders in the form 'TIME METH' or 'TIME'.  TIME "
-                          "is a number which may be followed by an optional "
-                          "'w', 'd', 'h', or 'm' (meaning weeks, days, hours, "
-                          "minutes) and default to minutes.  METH is a string "
-                          "'popup', 'email', or 'sms' and defaults to popup.")
-gflags.DEFINE_string("title", None, "Event title")
-gflags.DEFINE_multistring("who", [], "Event attendees")
-gflags.DEFINE_string("where", None, "Event location")
-gflags.DEFINE_string("when", None, "Event time")
-gflags.DEFINE_integer(
-    "duration", None,
-    "Event duration in minutes or days if --allday is given.")
-gflags.DEFINE_string("description", None, "Event description")
-gflags.DEFINE_bool("allday", False,
-                   "If --allday is given, the event will be an all-day event "
-                   "(possibly multi-day if --duration is greater than 1). The "
-                   "time part of the --when will be ignored.")
-gflags.DEFINE_bool("prompt", True,
-                   "Prompt for missing data when adding events")
-gflags.DEFINE_bool("default_reminders", True,
-                   "If no --reminder is given, use the defaults.  If this is "
-                   "false, do not create any reminders.")
-
-gflags.DEFINE_bool("iamaexpert", False, "Probably not")
-gflags.DEFINE_bool("refresh", False, "Delete and refresh cached data")
-gflags.DEFINE_bool("cache", True, "Execute command without using cache")
-
-gflags.DEFINE_bool("verbose", False, "Be verbose on imports",
-                   short_name="v")
-gflags.DEFINE_bool("dump", False, "Print events and don't import",
-                   short_name="d")
-
-gflags.DEFINE_bool("use_reminders", False,
-                   "Honour the remind time when running remind command")
-
-gflags.RegisterValidator("details",
-                         lambda value: all(x in [
-                             "all", "calendar", "location", "length",
-                             "reminders", "description", "longurl",
-                             "shorturl", "url", "attendees", "attachments",
-                             "email"] for x in value))
-gflags.RegisterValidator("reminder",
-                         lambda value: all(
-                             gcal.parse_reminder(x) for x in value))
-gflags.RegisterValidator("color_owner",
-                         lambda value: get_color(value) is not None)
-gflags.RegisterValidator("color_writer",
-                         lambda value: get_color(value) is not None)
-gflags.RegisterValidator("color_reader",
-                         lambda value: get_color(value) is not None)
-gflags.RegisterValidator("color_freebusy",
-                         lambda value: get_color(value) is not None)
-gflags.RegisterValidator("color_date",
-                         lambda value: get_color(value) is not None)
-gflags.RegisterValidator("color_now_marker",
-                         lambda value: get_color(value) is not None)
-gflags.RegisterValidator("color_border",
-                         lambda value: get_color(value) is not None)
-
-gflags.ADOPT_module_key_flags(gflags)
-
-
 def version():
     print(__program__,  __version__,  ' (', __author__,  ')')
 
@@ -216,7 +90,22 @@ def version():
 def usage(expanded=False):
     print(__doc__ % sys.argv[0])
     if expanded:
-        print(FLAGS.MainModuleHelp())
+        print(expanded())
+
+
+def get_cal_colors(cal_names):
+    cal_colors = {}
+    for cal_name in cal_names:
+        cal_name_parts = cal_name.split("#")
+        cal_name_simple = cal_name_parts[0]
+        cal_color = cal_colors.get(cal_name_simple)
+        if len(cal_name_parts) > 0:
+            cal_color_raw = cal_name_parts[-1]
+            cal_color_obj = get_color(cal_color_raw)
+            if cal_color_obj is not None:
+                cal_color = cal_color_obj
+        cal_colors[cal_name_simple] = cal_color
+    return cal_colors
 
 
 def get_color(value):
@@ -246,7 +135,6 @@ def get_color(value):
 
 
 def debug_print(msg):
-    return
     print_msg(colors.CLR_YLW(), msg)
 
 
@@ -257,12 +145,134 @@ def print_err_msg(msg):
 def print_msg(color, msg):
     if colors.CLR.use_color:
         msg = str(color) + msg + str(colors.CLR_NRM())
-    sys.stdout.write(msg)
+    print(msg, end='')
 
 
-def main():
+def parse_args(argv=sys.argv):
+    flags = gflags.FLAGS
+    flags.UseGnuGetOpt()  # allow mixing of commands and options
+    gflags.DEFINE_bool("help", None, "Show this help")
+    gflags.DEFINE_bool("helpshort", None, "Show command help only")
+    gflags.DEFINE_bool("version", False, "Show the version and exit")
+    gflags.DEFINE_string("client_id", __API_CLIENT_ID__, "API client_id")
+    gflags.DEFINE_string(
+            "client_secret", __API_CLIENT_SECRET__, "API client_secret")
+    gflags.DEFINE_string(
+            "config_folder", None,
+            "Optional directory to load/store all configuration "
+            "information")
+    gflags.DEFINE_bool(
+            "includeRc", False,
+            "Whether to include ~/.gcalclirc when using config_folder")
+    gflags.DEFINE_multistring("calendar", [], "Which calendars to use")
+    gflags.DEFINE_multistring(
+            "default_calendar", [],
+            "Optional default calendar to use if no --calendar "
+            "options are given")
+    gflags.DEFINE_bool("military", False, "Use 24 hour display")
+    # Single --detail that allows you to specify what parts you want
+    gflags.DEFINE_multistring(
+            "details", [], "Which parts to display, can be: "
+            "'all', 'calendar', 'location', 'length', "
+            "'reminders', 'description', 'longurl', 'shorturl', "
+            "'url', 'attendees', 'email'")
+    # old style flags for backwards compatibility
+    gflags.DEFINE_bool("detail_all", False, "Display all details")
+    gflags.DEFINE_bool("detail_calendar", False, "Display calendar name")
+    gflags.DEFINE_bool("detail_location", False, "Display event location")
+    gflags.DEFINE_bool(
+            "detail_attendees", False, "Display event attendees")
+    gflags.DEFINE_bool(
+            "detail_attachments", False, "Display event attachments")
+    gflags.DEFINE_bool("detail_length", False, "Display length of event")
+    gflags.DEFINE_bool("detail_reminders", False, "Display reminders")
+    gflags.DEFINE_bool("detail_description", False, "Display description")
+    gflags.DEFINE_bool("detail_email", False, "Display creator email")
+    gflags.DEFINE_integer(
+            "detail_description_width", 80, "Set description width")
+    gflags.DEFINE_enum("detail_url", None, ["long", "short"], "Set URL output")
+    gflags.DEFINE_bool("tsv", False, "Use Tab Separated Value output")
+    gflags.DEFINE_bool("started", True, "Show events that have started")
+    gflags.DEFINE_bool("declined", True, "Show events that have been declined")
+    gflags.DEFINE_integer("width", 10, "Set output width", short_name="w")
+    gflags.DEFINE_bool("monday", False, "Start the week on Monday")
+    gflags.DEFINE_bool("color", True, "Enable/Disable all color output")
+    gflags.DEFINE_bool("lineart", True, "Enable/Disable line art")
+    gflags.DEFINE_bool("conky", False, "Use Conky color codes")
+    gflags.DEFINE_string("color_owner", "cyan", "Color for owned calendars")
+    gflags.DEFINE_string(
+            "color_writer", "green", "Color for writable calendars")
+    gflags.DEFINE_string(
+            "color_reader", "magenta", "Color for read-only calendars")
+    gflags.DEFINE_string(
+            "color_freebusy", "default", "Color for free/busy calendars")
+    gflags.DEFINE_string("color_date", "yellow", "Color for the date")
+    gflags.DEFINE_string(
+            "color_now_marker", "brightred", "Color for the now marker")
+    gflags.DEFINE_string("color_border", "white", "Color of line borders")
+    gflags.DEFINE_string("locale", None, "System locale")
+    gflags.DEFINE_multistring(
+            "reminder", [],
+            "Reminders in the form 'TIME METH' or 'TIME'.  TIME "
+            "is a number which may be followed by an optional "
+            "'w', 'd', 'h', or 'm' (meaning weeks, days, hours, "
+            "minutes) and default to minutes.  METH is a string "
+            "'popup', 'email', or 'sms' and defaults to popup.")
+    gflags.DEFINE_string("title", None, "Event title")
+    gflags.DEFINE_multistring("who", [], "Event attendees")
+    gflags.DEFINE_string("where", None, "Event location")
+    gflags.DEFINE_string("when", None, "Event time")
+    gflags.DEFINE_integer(
+            "duration", None,
+            "Event duration in minutes or days if --allday is given.")
+    gflags.DEFINE_string("description", None, "Event description")
+    gflags.DEFINE_bool(
+            "allday", False,
+            "If --allday is given, the event will be an all-day event "
+            "(possibly multi-day if --duration is greater than 1). The "
+            "time part of the --when will be ignored.")
+    gflags.DEFINE_bool(
+            "prompt", True, "Prompt for missing data when adding events")
+    gflags.DEFINE_bool(
+            "default_reminders", True,
+            "If no --reminder is given, use the defaults.  If this is "
+            "false, do not create any reminders.")
+    gflags.DEFINE_bool("iamaexpert", False, "Probably not")
+    gflags.DEFINE_bool("refresh", False, "Delete and refresh cached data")
+    gflags.DEFINE_bool("cache", True, "Execute command without using cache")
+    gflags.DEFINE_bool(
+            "verbose", False, "Be verbose on imports", short_name="v")
+    gflags.DEFINE_bool(
+            "dump", False, "Print events and don't import", short_name="d")
+    gflags.DEFINE_bool(
+            "use_reminders", False,
+            "Honour the remind time when running remind command")
+    gflags.RegisterValidator(
+            "details",
+            lambda value: all(x in ["all", "calendar", "location", "length",
+                                    "reminders", "description", "longurl",
+                                    "shorturl", "url", "attendees",
+                                    "attachments", "email"] for x in value))
+    gflags.RegisterValidator(
+            "reminder",
+            lambda value: all(gcal.parse_reminder(x) for x in value))
+    gflags.RegisterValidator(
+            "color_owner", lambda value: get_color(value) is not None)
+    gflags.RegisterValidator(
+            "color_writer", lambda value: get_color(value) is not None)
+    gflags.RegisterValidator(
+            "color_reader", lambda value: get_color(value) is not None)
+    gflags.RegisterValidator(
+            "color_freebusy", lambda value: get_color(value) is not None)
+    gflags.RegisterValidator(
+            "color_date", lambda value: get_color(value) is not None)
+    gflags.RegisterValidator(
+            "color_now_marker", lambda value: get_color(value) is not None)
+    gflags.RegisterValidator(
+            "color_border", lambda value: get_color(value) is not None)
+    gflags.ADOPT_module_key_flags(gflags)
+
     try:
-        argv = sys.argv
         if os.path.exists(os.path.expanduser('~/.gcalclirc')):
             # We want .gcalclirc to be sourced before any other --flagfile
             # params since we may be told to use a specific config folder, we
@@ -270,52 +280,56 @@ def main():
             tmpArgv = [argv[0], "--flagfile=~/.gcalclirc"] + argv[1:]
         else:
             tmpArgv = argv
-        args = FLAGS(tmpArgv)
+        args = flags(tmpArgv)
     except gflags.FlagsError as e:
         print_err_msg(str(e))
-        usage(True)
+        usage(flags.MainModuleHelp)
         sys.exit(1)
 
-    if FLAGS.config_folder:
-        if not os.path.exists(os.path.expanduser(FLAGS.config_folder)):
-            os.makedirs(os.path.expanduser(FLAGS.config_folder))
+    if flags.config_folder:
+        if not os.path.exists(os.path.expanduser(flags.config_folder)):
+            os.makedirs(os.path.expanduser(flags.config_folder))
         if os.path.exists(os.path.expanduser("%s/gcalclirc" %
-                                             FLAGS.config_folder)):
-            if not FLAGS.includeRc:
+                                             flags.config_folder)):
+            if not flags.includeRc:
                 tmpArgv = argv + ["--flagfile=%s/gcalclirc" %
-                                  FLAGS.config_folder, ]
+                                  flags.config_folder, ]
             else:
-                tmpArgv += ["--flagfile=%s/gcalclirc" % FLAGS.config_folder, ]
+                tmpArgv += ["--flagfile=%s/gcalclirc" % flags.config_folder, ]
 
-        FLAGS.Reset()
-        args = FLAGS(tmpArgv)
+        flags.Reset()
+        args = flags(tmpArgv)
 
-    argv = tmpArgv
+    return args, flags
 
-    if FLAGS.version:
+
+def main():
+    args, flags = parse_args()
+
+    if flags.version:
         version()
         sys.exit(0)
 
-    if FLAGS.help:
+    if flags.help:
         usage(True)
         sys.exit(0)
 
-    if FLAGS.helpshort:
+    if flags.helpshort:
         usage()
         sys.exit(0)
 
-    if not FLAGS.color:
+    if not flags.color:
         colors.CLR.use_color = False
 
-    if not FLAGS.lineart:
+    if not flags.lineart:
         gcal.ART.useArt = False
 
-    if FLAGS.conky:
+    if flags.conky:
         colors.SetConkyColors()
 
-    if FLAGS.locale:
+    if flags.locale:
         try:
-            locale.setlocale(locale.LC_ALL, FLAGS.locale)
+            locale.setlocale(locale.LC_ALL, flags.locale)
         except Exception as e:
             print_err_msg("Error: " + str(e) + "!\n"
                           "Check supported locales of your system.\n")
@@ -338,95 +352,95 @@ def main():
         usage()
         sys.exit(0)
 
-    if len(FLAGS.calendar) == 0:
-        FLAGS.calendar = FLAGS.default_calendar
+    if len(flags.calendar) == 0:
+        flags.calendar = flags.default_calendar
 
     cal_names = []
     cal_name_colors = []
-    cal_colors = gcal.get_cal_colors(FLAGS.calendar)
+    cal_colors = get_cal_colors(flags.calendar)
     cal_names_filtered = []
-    for cal_name in FLAGS.calendar:
+    for cal_name in flags.calendar:
         cal_name_simple = cal_name.split("#")[0]
         cal_names_filtered.append(cal_name_simple)
         cal_name_colors.append(cal_colors[cal_name_simple])
     cal_names = cal_names_filtered
 
-    if 'all' in FLAGS.details or FLAGS.detail_all:
-        if not FLAGS['detail_calendar'].present:
-            FLAGS['detail_calendar'].value = True
-        if not FLAGS['detail_location'].present:
-            FLAGS['detail_location'].value = True
-        if not FLAGS['detail_length'].present:
-            FLAGS['detail_length'].value = True
-        if not FLAGS['detail_reminders'].present:
-            FLAGS['detail_reminders'].value = True
-        if not FLAGS['detail_description'].present:
-            FLAGS['detail_description'].value = True
-        if not FLAGS['detail_url'].present:
-            FLAGS['detail_url'].value = "long"
-        if not FLAGS['detail_attendees'].present:
-            FLAGS['detail_attendees'].value = True
-        if not FLAGS['detail_attachments'].present:
-            FLAGS['detail_attachments'].value = True
-        if not FLAGS['detail_email'].present:
-            FLAGS['detail_email'].value = True
+    if 'all' in flags.details or flags.detail_all:
+        if not flags['detail_calendar'].present:
+            flags['detail_calendar'].value = True
+        if not flags['detail_location'].present:
+            flags['detail_location'].value = True
+        if not flags['detail_length'].present:
+            flags['detail_length'].value = True
+        if not flags['detail_reminders'].present:
+            flags['detail_reminders'].value = True
+        if not flags['detail_description'].present:
+            flags['detail_description'].value = True
+        if not flags['detail_url'].present:
+            flags['detail_url'].value = "long"
+        if not flags['detail_attendees'].present:
+            flags['detail_attendees'].value = True
+        if not flags['detail_attachments'].present:
+            flags['detail_attachments'].value = True
+        if not flags['detail_email'].present:
+            flags['detail_email'].value = True
     else:
-        if 'calendar' in FLAGS.details:
-            FLAGS['detail_calendar'].value = True
-        if 'location' in FLAGS.details:
-            FLAGS['detail_location'].value = True
-        if 'attendees' in FLAGS.details:
-            FLAGS['detail_attendees'].value = True
-        if 'attachments' in FLAGS.details:
-            FLAGS['detail_attachments'].value = True
-        if 'length' in FLAGS.details:
-            FLAGS['detail_length'].value = True
-        if 'reminders' in FLAGS.details:
-            FLAGS['detail_reminders'].value = True
-        if 'description' in FLAGS.details:
-            FLAGS['detail_description'].value = True
-        if 'longurl' in FLAGS.details or 'url' in FLAGS.details:
-            FLAGS['detail_url'].value = 'long'
-        elif 'shorturl' in FLAGS.details:
-            FLAGS['detail_url'].value = 'short'
-        if 'attendees' in FLAGS.details:
-            FLAGS['detail_attendees'].value = True
-        if 'email' in FLAGS.details:
-            FLAGS['detail_email'].value = True
+        if 'calendar' in flags.details:
+            flags['detail_calendar'].value = True
+        if 'location' in flags.details:
+            flags['detail_location'].value = True
+        if 'attendees' in flags.details:
+            flags['detail_attendees'].value = True
+        if 'attachments' in flags.details:
+            flags['detail_attachments'].value = True
+        if 'length' in flags.details:
+            flags['detail_length'].value = True
+        if 'reminders' in flags.details:
+            flags['detail_reminders'].value = True
+        if 'description' in flags.details:
+            flags['detail_description'].value = True
+        if 'longurl' in flags.details or 'url' in flags.details:
+            flags['detail_url'].value = 'long'
+        elif 'shorturl' in flags.details:
+            flags['detail_url'].value = 'short'
+        if 'attendees' in flags.details:
+            flags['detail_attendees'].value = True
+        if 'email' in flags.details:
+            flags['detail_email'].value = True
 
     gci = gcal.GoogleCalendarInterface(
            cal_names=cal_names,
            cal_name_colors=cal_name_colors,
-           military=FLAGS.military,
-           detail_calendar=FLAGS.detail_calendar,
-           detail_location=FLAGS.detail_location,
-           detail_attendees=FLAGS.detail_attendees,
-           detail_attachments=FLAGS.detail_attachments,
-           detail_length=FLAGS.detail_length,
-           detail_reminder=FLAGS.detail_reminders,
-           detail_descr=FLAGS.detail_description,
-           detail_descr_width=FLAGS.detail_description_width,
-           detail_url=FLAGS.detail_url,
-           detail_email=FLAGS.detail_email,
-           ignore_started=not FLAGS.started,
-           ignoreDeclined=not FLAGS.declined,
-           calWidth=FLAGS.width,
-           calMonday=FLAGS.monday,
-           calOwnerColor=get_color(FLAGS.color_owner),
-           calWriterColor=get_color(FLAGS.color_writer),
-           calReaderColor=get_color(FLAGS.color_reader),
-           calFreeBusyColor=get_color(FLAGS.color_freebusy),
-           date_color=get_color(FLAGS.color_date),
-           nowMarkerColor=get_color(FLAGS.color_now_marker),
-           border_color=get_color(FLAGS.color_border),
-           tsv=FLAGS.tsv,
-           refresh_cache=FLAGS.refresh,
-           use_cache=FLAGS.cache,
-           config_folder=FLAGS.config_folder,
-           client_id=FLAGS.client_id,
-           client_secret=FLAGS.client_secret,
-           defaultReminders=FLAGS.default_reminders,
-           all_day=FLAGS.allday)
+           military=flags.military,
+           detail_calendar=flags.detail_calendar,
+           detail_location=flags.detail_location,
+           detail_attendees=flags.detail_attendees,
+           detail_attachments=flags.detail_attachments,
+           detail_length=flags.detail_length,
+           detail_reminder=flags.detail_reminders,
+           detail_descr=flags.detail_description,
+           detail_descr_width=flags.detail_description_width,
+           detail_url=flags.detail_url,
+           detail_email=flags.detail_email,
+           ignore_started=not flags.started,
+           ignoreDeclined=not flags.declined,
+           calWidth=flags.width,
+           calMonday=flags.monday,
+           calOwnerColor=get_color(flags.color_owner),
+           calWriterColor=get_color(flags.color_writer),
+           calReaderColor=get_color(flags.color_reader),
+           calFreeBusyColor=get_color(flags.color_freebusy),
+           date_color=get_color(flags.color_date),
+           nowMarkerColor=get_color(flags.color_now_marker),
+           border_color=get_color(flags.color_border),
+           tsv=flags.tsv,
+           refresh_cache=flags.refresh,
+           use_cache=flags.cache,
+           config_folder=flags.config_folder,
+           client_id=flags.client_id,
+           client_secret=flags.client_secret,
+           defaultReminders=flags.default_reminders,
+           all_day=flags.allday)
 
     if args[0] == 'list':
         gci.list_all_calendars()
@@ -442,7 +456,7 @@ def main():
             print_err_msg('Error: invalid search string\n')
             sys.exit(1)
 
-        if not FLAGS.tsv:
+        if not flags.tsv:
             sys.stdout.write('\n')
 
     elif args[0] == 'agenda':
@@ -457,11 +471,11 @@ def main():
             print_err_msg('Error: invalid agenda arguments\n')
             sys.exit(1)
 
-        if not FLAGS.tsv:
+        if not flags.tsv:
             sys.stdout.write('\n')
 
     elif args[0] == 'calw':
-        if not FLAGS.width:
+        if not flags.width:
             print_err_msg('Error: invalid width, don\'t be an idiot!\n')
             sys.exit(1)
 
@@ -486,7 +500,7 @@ def main():
         sys.stdout.write('\n')
 
     elif args[0] == 'calm':
-        if not FLAGS.width:
+        if not flags.width:
             print_err_msg('Error: invalid width, don\'t be an idiot!\n')
             sys.exit(1)
 
@@ -505,29 +519,29 @@ def main():
             print_err_msg('Error: invalid event text\n')
             sys.exit(1)
 
-        gci.quick_add_event(args[1], reminder=FLAGS.reminder)
+        gci.quick_add_event(args[1], reminder=flags.reminder)
 
     elif (args[0] == 'add'):
-        if FLAGS.prompt:
-            if FLAGS.title is None:
+        if flags.prompt:
+            if flags.title is None:
                 print_msg(colors.CLR_MAG(), "Title: ")
-                FLAGS.title = input()
-            if FLAGS.where is None:
+                flags.title = input()
+            if flags.where is None:
                 print_msg(colors.CLR_MAG(), "Location: ")
-                FLAGS.where = input()
-            if FLAGS.when is None:
+                flags.where = input()
+            if flags.when is None:
                 print_msg(colors.CLR_MAG(), "When: ")
-                FLAGS.when = input()
-            if FLAGS.duration is None:
-                if FLAGS.allday:
+                flags.when = input()
+            if flags.duration is None:
+                if flags.allday:
                     print_msg(colors.CLR_MAG(), "Duration (days): ")
                 else:
                     print_msg(colors.CLR_MAG(), "Duration (mins): ")
-                FLAGS.duration = input()
-            if FLAGS.description is None:
+                flags.duration = input()
+            if flags.description is None:
                 print_msg(colors.CLR_MAG(), "Description: ")
-                FLAGS.description = input()
-            if not FLAGS.reminder:
+                flags.description = input()
+            if not flags.reminder:
                 while 1:
                     print_msg(colors.CLR_MAG(),
                               "Enter a valid reminder or '.' to end: ")
@@ -535,33 +549,33 @@ def main():
                     if r == '.':
                         break
                     n, m = gcal.parse_reminder(str(r))
-                    FLAGS.reminder.append(str(n) + ' ' + m)
+                    flags.reminder.append(str(n) + ' ' + m)
 
         # calculate "when" time:
         try:
             e_start, e_end = get_time_from_str(
-                    FLAGS.when, FLAGS.duration, FLAGS.allday)
+                    flags.when, flags.duration, flags.allday)
         except ValueError as exc:
             print_err_msg(str(exc))
             sys.exit(1)
 
-        gci.add_event(FLAGS.title, FLAGS.where, e_start, e_end,
-                      FLAGS.description, FLAGS.who,
-                      FLAGS.reminder)
+        gci.add_event(flags.title, flags.where, e_start, e_end,
+                      flags.description, flags.who,
+                      flags.reminder)
 
     elif args[0] == 'delete':
-        eStart = None
-        eEnd = None
+        event_start = None
+        event_end = None
         if len(args) < 2:
             print_err_msg('Error: invalid search string\n')
             sys.exit(1)
         elif len(args) == 4:  # search, start, end
-            eStart = gci.date_parser.from_string(args[2])
-            eEnd = gci.date_parser.from_string(args[3])
+            event_start = gci.date_parser.from_string(args[2])
+            event_end = gci.date_parser.from_string(args[3])
         elif len(args) == 3:  # search, start (default end)
-            eStart = gci.date_parser.from_string(args[2])
+            event_start = gci.date_parser.from_string(args[2])
 
-        gci.delete_events(args[1], FLAGS.iamaexpert, eStart, eEnd)
+        gci.delete_events(args[1], flags.iamaexpert, event_start, event_end)
 
         sys.stdout.write('\n')
 
@@ -577,20 +591,20 @@ def main():
     elif args[0] == 'remind':
         if len(args) == 3:  # minutes and command
             gci.Remind(int(args[1]),
-                       args[2], use_reminders=FLAGS.use_reminders)
+                       args[2], use_reminders=flags.use_reminders)
         elif len(args) == 2:  # minutes
-            gci.Remind(int(args[1]), use_reminders=FLAGS.use_reminders)
+            gci.Remind(int(args[1]), use_reminders=flags.use_reminders)
         elif len(args) == 1:  # defaults
-            gci.Remind(use_reminders=FLAGS.use_reminders)
+            gci.Remind(use_reminders=flags.use_reminders)
         else:
             print_err_msg('Error: invalid remind arguments\n')
             sys.exit(1)
 
     elif args[0] == 'import':
         if len(args) == 1:  # stdin
-            gci.ImportICS(FLAGS.verbose, FLAGS.dump, FLAGS.reminder)
+            gci.ImportICS(flags.verbose, flags.dump, flags.reminder)
         elif len(args) == 2:  # ics file
-            gci.ImportICS(FLAGS.verbose, FLAGS.dump, FLAGS.reminder, args[1])
+            gci.ImportICS(flags.verbose, flags.dump, flags.reminder, args[1])
         else:
             print_err_msg('Error: invalid import arguments\n')
             sys.exit(1)

@@ -1,7 +1,6 @@
 from gcalcli import colors
 from gcalcli.gcal import GoogleCalendarInterface
-from gcalcli.cli import print_msg
-from gcalcli.utils import get_time_from_str
+from gcalcli.cli import print_msg, debug_print, get_cal_colors, parse_args
 from apiclient.discovery import HttpMock, build
 import pytest
 import os
@@ -37,13 +36,25 @@ def gcal(monkeypatch):
 
 # TODO: These are more like placeholders for proper unit tests
 #       We just try the commands and make sure no errors occur.
-def test_list(gcal):
-    # test data has 6 cals
+def test_list(gcal, capsys):
     with open(TEST_DATA_DIR + '/cal_list.json') as cl:
-        assert len(load(cl)['items']) == len(gcal.all_cals)
-    # TODO: should test the table formatting
-    # for now, just assert that there's no error, ha!
+        cal_count = len(load(cl)['items'])
+
+    # test data has 6 cals
+    assert cal_count == len(gcal.all_cals)
+
+    # color state is being stored in the colors class.
+    # ugh, is this java?!
+    colors.CLR.use_color = False
+    expected_header = ''' Access  Title\n'''
+
     gcal.list_all_calendars()
+    captured = capsys.readouterr()
+    assert captured.out.startswith(expected_header)
+
+    # +3 cos one for the header, one for the '----' decorations,
+    # and one for the eom
+    assert len(captured.out.split('\n')) == cal_count + 3
 
 
 def test_agenda(gcal):
@@ -61,17 +72,32 @@ def test_cal_query(gcal):
 #     gcal.text_query('jam')
 #     captured = capsys.readouterr()
 #     assert captured == ""
+def test_parse_args():
+    parse_args(argv=[])
+
+
+def test_print_msg(capsys):
+    colors.CLR.use_color = True
+    print_msg(colors.CLR_BRRED(), 'test')
+    captured = capsys.readouterr()
+    expected = str(colors.CLR_BRRED()) + 'test' + str(colors.CLR_NRM())
+    assert captured.out == expected
 
 
 @pytest.fixture
-def test_print_msg(capsys):
-    print_msg(colors.CLR_BRRED(), 'test')
+def test_debug_print(capsys):
+    colors.CLR.use_color = True
+    debug_print('test')
     captured = capsys.readouterr()
-    assert captured == str(colors.CLR_BRRED()) + 'test' + str(colors.CLR_NRM())
+    assert captured == str(colors.CLR_YLW()) + 'test' + str(colors.CLR_NRM())
 
 
-def test_get_time_from_str():
-    begin_2018_gmt = '2018-01-01T00:00:00+00:00'
-    two_hrs_later = '2018-01-01T02:00:00+00:00'
-    assert (begin_2018_gmt, two_hrs_later) == \
-        get_time_from_str(begin_2018_gmt, e_duration=120)
+def test_get_cal_colors():
+    test_cal = 'testcal@gmail.com'
+    no_color_reply = {test_cal: None}
+    assert no_color_reply == get_cal_colors([test_cal])
+
+    reply = get_cal_colors([test_cal + '#red'])
+    assert isinstance(reply[test_cal], colors.CLR_RED)
+
+    assert no_color_reply == get_cal_colors([test_cal + '#notarealcolorname'])
