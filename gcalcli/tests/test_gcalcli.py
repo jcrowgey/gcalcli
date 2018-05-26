@@ -13,8 +13,10 @@ TEST_DATA_DIR = os.path.dirname(os.path.abspath(__file__)) + '/data'
 def mocked_calendar_service(self):
     http = HttpMock(
             TEST_DATA_DIR + '/cal_service_discovery.json', {'status': '200'})
-    self._cal_service = build(serviceName='calendar', version='v3', http=http)
-    return self._cal_service
+    if not self.cal_service:
+        self.cal_service = build(
+                serviceName='calendar', version='v3', http=http)
+    return self.cal_service
 
 
 def mocked_calendar_list(self):
@@ -33,14 +35,24 @@ def gcal(monkeypatch):
     return GoogleCalendarInterface(use_cache=False)
 
 
-# command tests
+# TODO: These are more like placeholders for proper unit tests
+#       We just try the commands and make sure no errors occur.
 def test_list(gcal):
     # test data has 6 cals
     with open(TEST_DATA_DIR + '/cal_list.json') as cl:
         assert len(load(cl)['items']) == len(gcal.all_cals)
     # TODO: should test the table formatting
     # for now, just assert that there's no error, ha!
-    # assert gcal.list_all_calendars()
+    gcal.list_all_calendars()
+
+
+def test_agenda(gcal):
+    gcal.agenda_query()
+
+
+def test_cal_query(gcal):
+    gcal.agenda_query('calw')
+    gcal.agenda_query('calm')
 
 
 # @pytest.fixture
